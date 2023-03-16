@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"os"
 
 	"github.com/go-redis/redis/v9"
 )
@@ -18,14 +17,15 @@ func RedisConnect() (*redis.Client, context.Context) {
 	}
 	logger := NewLogger("cache")
 
-	address := os.Getenv("REDIS_ADDRESS")
+	// address := os.Getenv("REDIS_ADDRESS")
 
-	password := os.Getenv("REDIS_PASSWORD")
+	// password := os.Getenv("REDIS_PASSWORD")
 
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     address,
-		Password: password,
+		Addr:     "containers-us-west-187.railway.app:7556",
+		Password: "uEP58w0FMoKs3cPutYyc",
 		DB:       0,
+		Username: "default",
 	})
 
 	_, err := rdb.Ping(ctx).Result()

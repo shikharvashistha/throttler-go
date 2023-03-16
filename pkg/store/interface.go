@@ -1,16 +1,14 @@
-package store
+package keyvalue
 
-import (
-	"github.com/shikharvashistha/throttler-go/pkg/store/keyvalue"
-	"gorm.io/gorm"
-)
+import "time"
 
-type Store interface {
-	KV() keyvalue.KV
+type KV interface {
+	Get(key string) ([]string, error)
+	Push(key string, values []string, time time.Duration) error
+	Remove(key string) error
+	Overwrite(key string, values []string, time time.Duration) error
 }
 
-func NewStore(db *gorm.DB) Store {
-	return &store{
-		kv: keyvalue.NewKVStore(),
-	}
+func NewKVStore() KV {
+	return &KVS{}
 }
