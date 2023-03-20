@@ -12,7 +12,7 @@ func GetCustomThrottle(
 	inDur time.Duration,
 	scope string,
 	kvs keyvalue.KV,
-	getCacheKey func(r *http.Request) (string, error)) throttle {
+	getCacheKey func(r *http.Request, scope string) (string, error)) throttle {
 
 	throttle := &SimpleRateThrottle{}
 	throttle.Init(reqAllowed, inDur, kvs, scope, getCacheKey)

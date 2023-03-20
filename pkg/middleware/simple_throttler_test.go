@@ -10,7 +10,7 @@ const (
 	testkey = "test_key"
 )
 
-func getCacheKey(r *http.Request) (string, error) { return testkey, nil }
+func getCacheKey(r *http.Request, scope string) (string, error) { return testkey + scope, nil }
 
 type testKvs struct {
 	kv map[string][]string

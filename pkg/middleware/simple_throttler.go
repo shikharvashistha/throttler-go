@@ -15,7 +15,7 @@ type SimpleRateThrottle struct {
 	key, scope  string
 	history     []string
 	now         time.Time
-	getCacheKey func(r *http.Request) (string, error)
+	getCacheKey func(r *http.Request, scope string) (string, error)
 	reqAllowed  int
 	inDur       time.Duration
 }
@@ -25,7 +25,7 @@ func (t *SimpleRateThrottle) Init(
 	inDur time.Duration,
 	cache keyvalue.KV,
 	scope string,
-	getCacheKey func(r *http.Request) (string, error)) {
+	getCacheKey func(r *http.Request, scope string) (string, error)) {
 
 	t.cache = cache
 	t.scope = scope
@@ -55,7 +55,7 @@ func (t *SimpleRateThrottle) AllowRequest(r *http.Request) (bool, error) {
 	t.now = time.Now()
 	var err error
 
-	t.key, err = t.getCacheKey(r)
+	t.key, err = t.getCacheKey(r, t.scope)
 	if err != nil {
 		return false, err
 	}

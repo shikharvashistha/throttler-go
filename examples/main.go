@@ -35,8 +35,8 @@ func main() {
 		fmt.Fprintln(w, "Recomened Wait: ", wait)
 	})
 
-	custom_throttle := middleware.GetCustomThrottle(10, time.Minute, "test_custom", kvs, func(r *http.Request) (string, error) {
-		return r.Header.Get("user_id"), nil
+	custom_throttle := middleware.GetCustomThrottle(10, time.Minute, "test_custom", kvs, func(r *http.Request, scope string) (string, error) {
+		return r.Header.Get("user_id") + scope, nil
 	})
 	http.HandleFunc("/testCustom", func(w http.ResponseWriter, r *http.Request) {
 		c, _ := custom_throttle.AllowRequest(r)

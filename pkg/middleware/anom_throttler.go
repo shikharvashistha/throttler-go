@@ -16,8 +16,8 @@ func GetAnonymousThrottle(
 	kvs keyvalue.KV) throttle {
 	throttle := &SimpleRateThrottle{}
 
-	throttle.Init(reqAllowed, inDur, kvs, scope, func(r *http.Request) (string, error) {
-		return utils.GetIndent(r, numProxies), nil
+	throttle.Init(reqAllowed, inDur, kvs, scope, func(r *http.Request, scope string) (string, error) {
+		return utils.GetIndent(r, numProxies) + scope, nil
 	})
 
 	return throttle
