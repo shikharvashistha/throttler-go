@@ -2,14 +2,19 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	keyvalue "github.com/shikharvashistha/throttler-go/pkg/store"
 )
 
-type CustomThrottle struct {
-	Simple_throttle SimpleRateThrottle
-}
+func GetCustomThrottle(
+	reqAllowed int,
+	inDur time.Duration,
+	scope string,
+	kvs keyvalue.KV,
+	getCacheKey func(r *http.Request) (string, error)) throttle {
 
-func (t *CustomThrottle) Init(get_cache_key func(r *http.Request) (string, error)) {
-	t.Simple_throttle.Init(keyvalue.NewKVStore(), get_cache_key)
+	throttle := &SimpleRateThrottle{}
+	throttle.Init(reqAllowed, inDur, kvs, scope, getCacheKey)
+	return throttle
 }

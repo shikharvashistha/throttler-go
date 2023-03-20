@@ -15,10 +15,3 @@ func ParseTimestamp(str string) (*time.Time, error) {
 	last_time := time.Unix(i, 0)
 	return &last_time, nil
 }
-
-func Min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}

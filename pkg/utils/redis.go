@@ -11,26 +11,28 @@ var (
 	ctx               = context.Background()
 )
 
-func RedisConnect() (*redis.Client, context.Context) {
+func GetRedis() (*redis.Client, context.Context) {
+	if rdb == nil {
+		panic("Redis not connected")
+	}
+
+	return rdb, ctx
+}
+
+func RedisConnect(addr, password, username string, db int) (*redis.Client, context.Context) {
 	if rdb != nil {
 		return rdb, ctx
 	}
-	logger := NewLogger("cache")
-
-	// address := os.Getenv("REDIS_ADDRESS")
-
-	// password := os.Getenv("REDIS_PASSWORD")
 
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     "containers-us-west-187.railway.app:7556",
-		Password: "uEP58w0FMoKs3cPutYyc",
-		DB:       0,
-		Username: "default",
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+		Username: username,
 	})
 
 	_, err := rdb.Ping(ctx).Result()
 	if err != nil {
-		logger.WithError(ADB, err).Info("Failed to initialize the redis client")
 		return nil, nil
 	}
 	return rdb, ctx

@@ -10,31 +10,35 @@ import (
 	"github.com/shikharvashistha/throttler-go/pkg/utils"
 )
 
-var (
-	req = 10
-	dur = 60
-)
-
 type SimpleRateThrottle struct {
-	base_throttle BaseThrottle
-	cache         keyvalue.KV
-	key           string
-	history       []string
-	now           time.Time
-	get_cache_key func(r *http.Request) (string, error)
+	cache       keyvalue.KV
+	key, scope  string
+	history     []string
+	now         time.Time
+	getCacheKey func(r *http.Request) (string, error)
+	reqAllowed  int
+	inDur       time.Duration
 }
 
-func (t *SimpleRateThrottle) Init(cache keyvalue.KV, get_cache_key_func func(r *http.Request) (string, error)) {
-	utils.RedisConnect()
+func (t *SimpleRateThrottle) Init(
+	reqAllowed int,
+	inDur time.Duration,
+	cache keyvalue.KV,
+	scope string,
+	getCacheKey func(r *http.Request) (string, error)) {
+
 	t.cache = cache
-	t.get_cache_key = get_cache_key_func
+	t.scope = scope
+	t.getCacheKey = getCacheKey
+	t.reqAllowed = reqAllowed
+	t.inDur = inDur
 }
 
-func (t *SimpleRateThrottle) throttle_success(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (t *SimpleRateThrottle) throttleSuccess(r *http.Request) (bool, error) {
+
 	t.history = append(t.history, strconv.FormatInt(t.now.Unix(), 10))
 
-	err := t.cache.Overwrite(t.key, t.history, time.Second*time.Duration(dur))
-
+	err := t.cache.Overwrite(t.key, t.history, t.inDur)
 	if err != nil {
 		return false, err
 	}
@@ -42,66 +46,65 @@ func (t *SimpleRateThrottle) throttle_success(w http.ResponseWriter, r *http.Req
 	return true, nil
 }
 
-func (t *SimpleRateThrottle) throttle_failure(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (t *SimpleRateThrottle) throttleFailure(r *http.Request) (bool, error) {
 	return false, nil
 }
 
-func (t *SimpleRateThrottle) Allow_request(w http.ResponseWriter, r *http.Request) (bool, error) {
-
-	var err error
-
-	t.key, err = t.get_cache_key(r)
-
-	if err != nil {
-		return false, err
-	}
-
-	t.history, err = t.cache.Get(t.key)
-
-	if err != nil {
-		return false, err
-	}
+func (t *SimpleRateThrottle) AllowRequest(r *http.Request) (bool, error) {
 
 	t.now = time.Now()
+	var err error
+
+	t.key, err = t.getCacheKey(r)
+	if err != nil {
+		return false, err
+	}
+
+	t.key = t.key + t.scope
+
+	t.history, err = t.cache.Get(t.key)
+	if err != nil {
+		return false, err
+	}
 
 	// Drop any requests from the history which have now passed the
 	// throttle duration
 	for len(t.history) > 0 {
 
-		last_time, err := utils.ParseTimestamp(t.history[0])
-
+		lastTime, err := utils.ParseTimestamp(t.history[0])
 		if err != nil {
 			return false, err
 		}
 
-		if last_time.Before(t.now.Add(-time.Second * time.Duration(dur))) {
+		if lastTime.Before(t.now.Add(-t.inDur)) {
 			t.history = t.history[1:len(t.history)]
 		} else {
 			break
 		}
 	}
 
-	if len(t.history) >= req {
-		return t.throttle_failure(w, r)
+	if len(t.history) >= t.reqAllowed {
+		return t.throttleFailure(r)
 	}
-	return t.throttle_success(w, r)
+	return t.throttleSuccess(r)
 }
 
-func (t *SimpleRateThrottle) wait(w http.ResponseWriter, r *http.Request) (float64, error) {
-	var remaining_duration, available_requests int
+func (t *SimpleRateThrottle) Wait() (float64, error) {
+	var remainingDuration, availableRequests int
+
 	if t.history != nil {
-		last_time, err := utils.ParseTimestamp(t.history[len(t.history)-1])
+		lastTime, err := utils.ParseTimestamp(t.history[0])
 
 		if err != nil {
 			return 0, err
 		}
 
-		remaining_duration = int(time.Since(*last_time))
-		available_requests = req - len(t.history) + 1
+		remainingDuration = int(t.inDur.Seconds()) - int(t.now.Sub(*lastTime).Seconds())
+		availableRequests = t.reqAllowed - len(t.history)
 	} else {
-		remaining_duration = dur
-		available_requests = req
+		remainingDuration = int(t.inDur.Seconds())
+		availableRequests = t.reqAllowed
 	}
 
-	return float64(remaining_duration) / float64(available_requests), nil
+	return float64(remainingDuration) / float64(availableRequests), nil
 }

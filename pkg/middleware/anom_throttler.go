@@ -2,18 +2,23 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	keyvalue "github.com/shikharvashistha/throttler-go/pkg/store"
+	"github.com/shikharvashistha/throttler-go/pkg/utils"
 )
 
-type AnomThrottle struct {
-	Simple_throttle SimpleRateThrottle
-}
+func GetAnonymousThrottle(
+	reqAllowed int,
+	inDur time.Duration,
+	scope string,
+	numProxies int,
+	kvs keyvalue.KV) throttle {
+	throttle := &SimpleRateThrottle{}
 
-func (t *AnomThrottle) get_cache_key(r *http.Request) (string, error) {
-	return t.Simple_throttle.base_throttle.GetIndent(r), nil
-}
+	throttle.Init(reqAllowed, inDur, kvs, scope, func(r *http.Request) (string, error) {
+		return utils.GetIndent(r, numProxies), nil
+	})
 
-func (t *AnomThrottle) Init() {
-	t.Simple_throttle.Init(keyvalue.NewKVStore(), t.get_cache_key)
+	return throttle
 }

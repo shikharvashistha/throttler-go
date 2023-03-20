@@ -10,7 +10,7 @@ import (
 type KVS struct{}
 
 func (k *KVS) Push(key string, values []string, time time.Duration) error {
-	rdb, ctx := utils.RedisConnect()
+	rdb, ctx := utils.GetRedis()
 	err := rdb.RPush(ctx, key, values).Err()
 
 	if err != nil {
@@ -22,7 +22,7 @@ func (k *KVS) Push(key string, values []string, time time.Duration) error {
 }
 
 func (k *KVS) Get(key string) ([]string, error) {
-	rdb, ctx := utils.RedisConnect()
+	rdb, ctx := utils.GetRedis()
 	val, err := rdb.LRange(ctx, key, 0, -1).Result()
 	if err == redis.Nil {
 		return make([]string, 0), nil
@@ -31,7 +31,7 @@ func (k *KVS) Get(key string) ([]string, error) {
 }
 
 func (k *KVS) Overwrite(key string, values []string, time time.Duration) error {
-	rdb, ctx := utils.RedisConnect()
+	rdb, ctx := utils.GetRedis()
 	pipe := rdb.TxPipeline()
 
 	pipe.Del(ctx, key)
@@ -44,7 +44,7 @@ func (k *KVS) Overwrite(key string, values []string, time time.Duration) error {
 }
 
 func (k *KVS) Remove(key string) error {
-	rdb, ctx := utils.RedisConnect()
+	rdb, ctx := utils.GetRedis()
 	err := rdb.Del(ctx, key).Err()
 	return err
 }
