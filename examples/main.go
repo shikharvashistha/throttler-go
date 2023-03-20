@@ -26,10 +26,21 @@ func main() {
 
 	kvs := keyvalue.NewKVStore()
 
-	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		a := middleware.GetAnonymousThrottle(10, time.Minute, "test", 5, kvs)
-		c, _ := a.AllowRequest(r)
-		wait, _ := a.Wait()
+	anonymous_throttle := middleware.GetAnonymousThrottle(10, time.Minute, "test_anonymuous", 5, kvs)
+	http.HandleFunc("/testAnonymuous", func(w http.ResponseWriter, r *http.Request) {
+
+		c, _ := anonymous_throttle.AllowRequest(r)
+		wait, _ := anonymous_throttle.Wait()
+		fmt.Fprintln(w, "Limit exceeded: ", !c)
+		fmt.Fprintln(w, "Recomened Wait: ", wait)
+	})
+
+	custom_throttle := middleware.GetCustomThrottle(10, time.Minute, "test_custom", kvs, func(r *http.Request) (string, error) {
+		return r.Header.Get("user_id"), nil
+	})
+	http.HandleFunc("/testCustom", func(w http.ResponseWriter, r *http.Request) {
+		c, _ := custom_throttle.AllowRequest(r)
+		wait, _ := custom_throttle.Wait()
 		fmt.Fprintln(w, "Limit exceeded: ", !c)
 		fmt.Fprintln(w, "Recomened Wait: ", wait)
 	})
