@@ -36,8 +36,6 @@ If you want to use a cache other than the default one, you can modify/implement 
 The `GetIndent` function can also be modified to use a different key. It has `GetIndent func(r *http.Request, numProxies int) string` as a parameter. The `GetIndent` function should return a string that will be used as the cache key. So if you want to use a different key, you can modify this function as per requirement.
 
 
-
-
 ### Setting up the AnonRateThrottler
 
 The `AnonRateThrottler` is used to throttle anonymous requests. It is based on the IP address of the client. The IP address is used to generate a cache key to throttle the client. The `AnonRateThrottler` takes the following parameters:
@@ -61,3 +59,39 @@ The `CustomRateThrottler` takes the following parameters:
 - `scope`: The scope of the rate limit. This is used to generate the cache key.
 - `kvs`: The key-value store used to store the cache.
 - `getCacheKey`: The function used to generate the cache key.
+
+
+## Examples
+
+### AnonRateThrottler
+
+`anonymous_throttle := middleware.GetAnonymousThrottle(a, b, "c", d, e)`
+
+- a: The number of requests allowed in the given `duration`.
+- b: The duration of the rate limit.
+- c: The scope of the rate limit. This is used to generate the cache key.
+- d: The number of proxies in front of the server. This is used to get the client's IP address.
+- e: The key-value store used to store the cache.
+
+
+The following code can be used to check if the request is allowed and to get the time to wait before the next request can be made.
+
+`c, _ := anonymous_throttle.AllowRequest(r)`
+`wait, _ := anonymous_throttle.Wait()`
+
+
+### CustomRateThrottler
+
+
+`custom_throttle := middleware.GetCustomThrottle(a, b, "c", d, e)`
+
+- a: The number of requests allowed in the given `duration`.
+- b: The duration of the rate limit.
+- c: The scope of the rate limit. This is used to generate the cache key.
+- d: The key-value store used to store the cache.
+- e: The function used to generate the cache key.
+
+The following code can be used to check if the request is allowed and to get the time to wait before the next request can be made.
+
+`c, _ := custom_throttle.AllowRequest(r)`
+`wait, _ := custom_throttle.Wait()`
