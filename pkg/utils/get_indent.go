@@ -13,11 +13,16 @@ func min(x, y int) int {
 }
 
 func GetIndent(r *http.Request, numProxies int) string {
-	xff := r.Header.Get("HTTP_X_FORWARDED_FOR")
+	/*
+		ref:
+			https://gist.github.com/17twenty/c815680c9c585cd9c16e62cbee7317b6,
+			https://oxpedia.org/wiki/index.php?title=AppSuite:Grizzly#Multiple_Proxies_in_front_of_the_cluster
+	*/
+	xff := r.Header.Get("X-Forwarded-For")
 	remoteAddr := r.RemoteAddr
 
 	if numProxies != 0 {
-		if numProxies == 0 || xff == "" {
+		if xff == "" {
 			return remoteAddr
 		}
 		addrs := strings.Split(xff, ",")
